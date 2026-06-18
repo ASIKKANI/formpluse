@@ -24,6 +24,22 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [dbMode, setDbMode] = useState(null); // 'Supabase PostgreSQL' | 'SQLite Fallback' | null
 
+  // Pixels state for bottom minimalist pixel animation
+  const [loginPixels, setLoginPixels] = useState([]);
+  useEffect(() => {
+    if (isSupabaseConfigured() && !session) {
+      const initialPixels = Array.from({ length: 25 }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        size: [4, 6, 8][Math.floor(Math.random() * 3)],
+        delay: Math.random() * 6,
+        duration: 3 + Math.random() * 5,
+        opacity: 0.15 + Math.random() * 0.35
+      }));
+      setLoginPixels(initialPixels);
+    }
+  }, [session]);
+
   // ----- Auth Helpers -----
   const getAuthHeaders = useCallback(() => {
     const headers = { 'Content-Type': 'application/json' };
@@ -230,11 +246,6 @@ export default function App() {
       <div className="login-landing">
         <div className="login-bg-grid" />
         
-        {/* Floating orbs */}
-        <div className="login-orb login-orb-1" />
-        <div className="login-orb login-orb-2" />
-        <div className="login-orb login-orb-3" />
-
         <div className="login-card">
           <div className="login-logo">
             <div className="login-logo-icon">
@@ -246,15 +257,15 @@ export default function App() {
 
           <div className="login-features">
             <div className="login-feature-item">
-              <ChevronRight size={14} style={{ color: '#8b5cf6', flexShrink: 0 }} />
+              <ChevronRight size={14} style={{ color: '#18181b', flexShrink: 0 }} />
               <span>AI-powered conversational surveys</span>
             </div>
             <div className="login-feature-item">
-              <ChevronRight size={14} style={{ color: '#8b5cf6', flexShrink: 0 }} />
+              <ChevronRight size={14} style={{ color: '#18181b', flexShrink: 0 }} />
               <span>Real-time sentiment & cluster analytics</span>
             </div>
             <div className="login-feature-item">
-              <ChevronRight size={14} style={{ color: '#8b5cf6', flexShrink: 0 }} />
+              <ChevronRight size={14} style={{ color: '#18181b', flexShrink: 0 }} />
               <span>Voice transcription & fatigue detection</span>
             </div>
           </div>
@@ -269,18 +280,29 @@ export default function App() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            <span>Sign in with Google</span>
+            <span>Log in with Google</span>
           </button>
 
           <p className="login-disclaimer">
-            By signing in, you agree to our Terms of Service. Your data stays secure with Supabase.
+            By logging in, you agree to our Terms of Service. Your data stays secure with Supabase.
           </p>
         </div>
 
-        <div className="login-footer">
-          <span>Built with</span>
-          <Layers size={14} style={{ color: '#8b5cf6' }} />
-          <span>FormPulse &middot; Groq &middot; Supabase</span>
+        <div className="pixel-animation-container">
+          {loginPixels.map(p => (
+            <div
+              key={p.id}
+              className="pixel-dot"
+              style={{
+                left: `${p.left}%`,
+                width: `${p.size}px`,
+                height: `${p.size}px`,
+                animationDelay: `${p.delay}s`,
+                animationDuration: `${p.duration}s`,
+                opacity: p.opacity
+              }}
+            />
+          ))}
         </div>
       </div>
     );
