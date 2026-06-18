@@ -117,7 +117,7 @@ export default function App() {
         const data = await res.json();
         setForms(data);
         setApiHealthy(true);
-        if (data.length > 0 && !activeForm) {
+        if (data.length > 0 && !activeForm && view !== 'analytics') {
           setActiveForm(data[0]);
         }
       } else if (res.status === 401) {
@@ -162,9 +162,11 @@ export default function App() {
         }
       ];
       setForms(defaultForms);
-      setActiveForm(defaultForms[0]);
+      if (view !== 'analytics') {
+        setActiveForm(defaultForms[0]);
+      }
     }
-  }, [getAuthHeaders, activeForm]);
+  }, [getAuthHeaders, activeForm, view]);
 
   useEffect(() => {
     // Only fetch forms when auth is resolved

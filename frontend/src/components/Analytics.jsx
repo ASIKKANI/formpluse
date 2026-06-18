@@ -666,6 +666,15 @@ export default function Analytics({ activeForm, selectForm, onNavigate, forms, a
     return renderGlobalView();
   }
 
+  if (!analyticsData || !analyticsData.summary) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
+        <RefreshCw className="kpi-icon" size={36} style={{ animation: 'spin 2s linear infinite' }} />
+        <p style={{ marginTop: '1rem', color: 'var(--text-muted)' }}>Loading form analytics...</p>
+      </div>
+    );
+  }
+
   const { summary, semantic_map, pacing_telemetry, outliers, historical_trends, responses_list } = analyticsData;
   const responsesList = responses_list || [];
 
