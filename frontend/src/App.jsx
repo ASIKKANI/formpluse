@@ -348,15 +348,6 @@ export default function App() {
           >
             <BarChart3 size={16} /> Analytics
           </button>
-          
-          {activeForm && (
-            <button 
-              className={`nav-link ${view === 'workspace' ? 'active' : ''}`}
-              onClick={() => setView('workspace')}
-            >
-              <Settings size={16} /> Workspace Editor
-            </button>
-          )}
         </nav>
 
         {/* Action Panel */}
