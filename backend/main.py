@@ -81,6 +81,17 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         raise HTTPException(status_code=401, detail="Supabase JWT secret is not configured in backend environment")
 
 # -----------------
+# 0. ROOT ROUTE
+# -----------------
+@app.get("/")
+def read_root():
+    return {
+        "status": "healthy",
+        "message": "FormPulse API is running.",
+        "health": "/api/health"
+    }
+
+# -----------------
 # 1. API STATUS & STATS
 # -----------------
 @app.get("/api/health")
