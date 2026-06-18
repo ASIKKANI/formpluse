@@ -168,13 +168,13 @@ def generate_form_schema(prompt: str) -> dict:
         # Return fallback on error directly instead of recursive calls (fixes infinite recursion bug!)
         return _generate_mock_schema_from_prompt(prompt)
 
-def generate_form_schema_from_webpage(url: str, text_content: str) -> dict:
+def generate_form_schema_from_webpage(url: str, text_content: str, prompt: str = "") -> dict:
     """
     Scrapes the text content of a company homepage, extracts their brand details,
     and returns a structured Form config matching the page's domain and tone.
     """
     if not client:
-        return _generate_mock_schema_from_webpage(url)
+        return _generate_mock_schema_from_webpage(url, prompt)
 
     system_prompt = (
         "You are an expert brand analyst and conversational flow designer.\n"
@@ -209,11 +209,15 @@ def generate_form_schema_from_webpage(url: str, text_content: str) -> dict:
     )
 
     try:
+        user_prompt_clause = ""
+        if prompt:
+            user_prompt_clause = f"\nAdditionally, customize the survey according to this specific user directive: '{prompt}'"
+
         completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"URL: {url}\n\nWebpage text content:\n{text_content[:8000]}"}
+                {"role": "user", "content": f"URL: {url}\n\nWebpage text content:\n{text_content[:8000]}{user_prompt_clause}"}
             ],
             response_format={"type": "json_object"},
             temperature=0.2
@@ -222,9 +226,9 @@ def generate_form_schema_from_webpage(url: str, text_content: str) -> dict:
         return result
     except Exception as e:
         print(f"Error calling Groq for webpage schema: {e}")
-        return _generate_mock_schema_from_webpage(url)
+        return _generate_mock_schema_from_webpage(url, prompt)
 
-def _generate_mock_schema_from_webpage(url: str) -> dict:
+def _generate_mock_schema_from_webpage(url: str, prompt: str = "") -> dict:
     # Extract domain name
     domain = "brand"
     try:
@@ -235,6 +239,7 @@ def _generate_mock_schema_from_webpage(url: str) -> dict:
     
     # Capitalize for title
     name = domain.capitalize() if domain else "Your Brand"
+    prompt_lower = prompt.lower()
     
     # Tailored mock responses
     if "stripe" in domain:
@@ -279,9 +284,37 @@ def _generate_mock_schema_from_webpage(url: str) -> dict:
         allowed = f"{domain}, onboarding, product, features, satisfaction"
         instr = "Be friendly, professional, and helpful. Guide the conversation casual but focused."
 
+    # Parse custom instructions in prompt to customize mock fields
+    if "orm" in prompt_lower:
+        fields.append({
+            "id": "orm_choice",
+            "label": "Database ORM tools preference",
+            "type": "choice",
+            "choices": ["Prisma", "Drizzle", "SQLAlchemy", "Sequelize", "Raw SQL"],
+            "required": True,
+            "description": "ORM chosen for integration"
+        })
+    if "pricing" in prompt_lower or "price" in prompt_lower:
+        fields.append({
+            "id": "pricing_tier_feedback",
+            "label": "Feedback on pricing structure",
+            "type": "text",
+            "required": False,
+            "description": "Friction points with cost or tier selections"
+        })
+    if "speed" in prompt_lower or "performance" in prompt_lower or "latency" in prompt_lower:
+        fields.append({
+            "id": "speed_feedback",
+            "label": "Performance or speed bottlenecks",
+            "type": "text",
+            "required": False,
+            "description": "Details on API response latency or database speeds"
+        })
+
     # Enrich fields with mock pacing questions
     for f in fields:
-        f["pacing_question"] = f"Could you tell me about your {f['label'].lower()}?"
+        if "pacing_question" not in f or not f["pacing_question"]:
+            f["pacing_question"] = f"Could you tell me about your {f['label'].lower()}?"
 
     return {
         "title": title,

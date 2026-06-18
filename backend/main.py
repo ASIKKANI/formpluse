@@ -303,6 +303,7 @@ def scrape_and_create_form(data: dict, user_id: str = Depends(get_current_user),
     and uses the LLM to generate a customized conversational survey form.
     """
     url = data.get("url")
+    prompt = data.get("prompt", "")
     if not url:
         raise HTTPException(status_code=400, detail="Target URL is required")
         
@@ -326,7 +327,7 @@ def scrape_and_create_form(data: dict, user_id: str = Depends(get_current_user),
         print(f"Failed to scrape webpage {url} due to: {e}. Proceeding with domain-fallback schema generation.")
 
     # Call LLM generator (will automatically use mock generator if text_content is empty or client is not configured)
-    generated = llm_provider.generate_form_schema_from_webpage(url, text_content)
+    generated = llm_provider.generate_form_schema_from_webpage(url, text_content, prompt)
     
     # Enrich pacing flow naturally
     fields = generated.get("schema_fields", [])

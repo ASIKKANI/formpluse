@@ -16,6 +16,7 @@ export default function Dashboard({ onNavigate, forms, setForms, selectForm, set
   
   const [activeTab, setActiveTab] = useState('prompt'); // 'prompt' | 'scrape' | 'manual'
   const [scrapeUrl, setScrapeUrl] = useState('');
+  const [scrapePrompt, setScrapePrompt] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [scanningLogs, setScanningLogs] = useState([]);
   
@@ -156,8 +157,32 @@ export default function Dashboard({ onNavigate, forms, setForms, selectForm, set
         settings: { allow_voice: true, fatigue_threshold: 0.7, code_switching: true }
       };
 
-      setForms(prevForms => [mockForm, ...prevForms]);
-      selectForm(mockForm);
+      // Try to save to backend database to get a real persistent UUID so it is shareable!
+      let formToUse = mockForm;
+      try {
+        const saveResponse = await fetch('/api/forms', {
+          method: 'POST',
+          headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: mockForm.title,
+            objective: mockForm.objective,
+            schema_fields: mockForm.schema_fields,
+            guardrails: mockForm.guardrails,
+            settings: mockForm.settings
+          })
+        });
+        if (saveResponse.ok) {
+          formToUse = await saveResponse.json();
+        }
+      } catch (saveErr) {
+        console.warn("Error saving mock form to database:", saveErr);
+      }
+
+      setForms(prevForms => [formToUse, ...prevForms]);
+      selectForm(formToUse);
       setShowCreateModal(false);
       setNewFormPrompt('');
       setNewFormTitle('');
@@ -195,7 +220,7 @@ export default function Dashboard({ onNavigate, forms, setForms, selectForm, set
           ...authHeaders,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ url: scrapeUrl })
+        body: JSON.stringify({ url: scrapeUrl, prompt: scrapePrompt })
       });
 
       if (!response.ok) {
@@ -211,6 +236,7 @@ export default function Dashboard({ onNavigate, forms, setForms, selectForm, set
       setTimeout(() => {
         setShowCreateModal(false);
         setScrapeUrl('');
+        setScrapePrompt('');
         setScanningLogs([]);
         setIsScanning(false);
         onNavigate('workspace');
@@ -222,6 +248,7 @@ export default function Dashboard({ onNavigate, forms, setForms, selectForm, set
 
       const domain = scrapeUrl.replace(/https?:\/\//i, '').replace(/www\./i, '').split('.')[0] || "brand";
       const mockId = Math.random().toString(36).substr(2, 9);
+      const lowerPrompt = (scrapePrompt || '').toLowerCase();
       
       let mockForm;
       if (scrapeUrl.toLowerCase().includes("supabase")) {
@@ -263,14 +290,64 @@ export default function Dashboard({ onNavigate, forms, setForms, selectForm, set
         };
       }
 
-      await addLog(`[SUCCESS] Sandbox mock schema compiled successfully.`, 1000);
+      // Add custom ORM or pricing/performance fields to fallback mock if specified in prompt
+      if (lowerPrompt.includes("orm")) {
+        mockForm.schema_fields.push({
+          id: "orm_choice",
+          label: "Database ORM tools preference",
+          type: "choice",
+          choices: ["Prisma", "Drizzle", "SQLAlchemy", "Sequelize", "Raw SQL"],
+          required: true,
+          description: "ORM chosen for integration",
+          pacing_question: "Which ORM or database mapper do you prefer using for your projects?"
+        });
+      }
+      if (lowerPrompt.includes("pricing") || lowerPrompt.includes("price")) {
+        mockForm.schema_fields.push({
+          id: "pricing_tier_feedback",
+          label: "Feedback on pricing structure",
+          type: "text",
+          required: false,
+          description: "Friction points with cost or tier selections",
+          pacing_question: "How do you feel about the pricing options we offer?"
+        });
+      }
 
-      setForms(prevForms => [mockForm, ...prevForms]);
-      selectForm(mockForm);
+      // Try to save to backend database to get a real persistent UUID so it is shareable!
+      let formToUse = mockForm;
+      try {
+        const saveResponse = await fetch('/api/forms', {
+          method: 'POST',
+          headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: mockForm.title,
+            objective: mockForm.objective,
+            schema_fields: mockForm.schema_fields,
+            guardrails: mockForm.guardrails,
+            settings: mockForm.settings
+          })
+        });
+        if (saveResponse.ok) {
+          formToUse = await saveResponse.json();
+          await addLog(`[SUCCESS] Sandbox mock schema saved to database!`, 1000);
+        } else {
+          await addLog(`[SUCCESS] Sandbox mock schema compiled (local-only fallback).`, 1000);
+        }
+      } catch (saveErr) {
+        console.warn("Error saving mock form to database, proceeding with local memory:", saveErr);
+        await addLog(`[SUCCESS] Sandbox mock schema compiled (local-only fallback).`, 1000);
+      }
+
+      setForms(prevForms => [formToUse, ...prevForms]);
+      selectForm(formToUse);
 
       setTimeout(() => {
         setShowCreateModal(false);
         setScrapeUrl('');
+        setScrapePrompt('');
         setScanningLogs([]);
         setIsScanning(false);
         onNavigate('workspace');
@@ -678,6 +755,19 @@ export default function Dashboard({ onNavigate, forms, setForms, selectForm, set
                         value={scrapeUrl}
                         onChange={e => setScrapeUrl(e.target.value)}
                         required
+                        style={{ marginBottom: '1rem' }}
+                      />
+
+                      <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 600 }}>
+                        Custom Focus / Prompt Directive (Optional)
+                      </label>
+                      <textarea 
+                        className="input-field" 
+                        rows="3" 
+                        placeholder="e.g., Customize the survey to focus on developer friction with PostgreSQL ORM integration..."
+                        value={scrapePrompt}
+                        onChange={e => setScrapePrompt(e.target.value)}
+                        style={{ resize: 'vertical' }}
                       />
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
