@@ -31,7 +31,12 @@ export default function FormFiller({ formId, standalone = true, onSessionUpdate 
           body: JSON.stringify({ form_id: formId })
         });
         
-        if (!response.ok) throw new Error("Failed to initialize conversational survey session.");
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("Form not found. Please verify the URL/Form ID.");
+          }
+          throw new Error("Failed to initialize conversational survey session.");
+        }
         
         const data = await response.json();
         setSession(data);
@@ -39,7 +44,7 @@ export default function FormFiller({ formId, standalone = true, onSessionUpdate 
         if (onSessionUpdate) onSessionUpdate(data);
       } catch (err) {
         console.error("Survey Init Error:", err);
-        setError("Unable to connect to the FormPulse survey engine. Ensure the backend is active.");
+        setError(err.message || "Unable to connect to the FormPulse survey engine. Ensure the backend is active.");
       } finally {
         setIsLoading(false);
       }
