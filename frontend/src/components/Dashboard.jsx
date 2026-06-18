@@ -273,7 +273,7 @@ export default function Dashboard({ onNavigate, forms, setForms, selectForm, set
       </div>
 
       {/* Main Content Split Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2.4fr 1fr', gap: '2rem', padding: '0 2rem' }}>
+      <div className="dashboard-split-layout">
         
         {/* LEFT COLUMN: Active Conversational Forms */}
         <div className="card-container" style={{ margin: 0 }}>
@@ -293,85 +293,87 @@ export default function Dashboard({ onNavigate, forms, setForms, selectForm, set
               <p>No forms found. Click "Create Form" to generate your first conversational workflow!</p>
             </div>
           ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Form Title</th>
-                  <th>Core Objective</th>
-                  <th>Fields</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {forms.map(form => (
-                  <tr 
-                    key={form.id} 
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => {
-                      selectForm(form);
-                      onNavigate('workspace');
-                    }}
-                  >
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{form.title}</td>
-                    <td style={{ color: 'var(--text-muted)', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {form.objective}
-                    </td>
-                    <td>
-                      <span className="share-url" style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid var(--card-border)', fontSize: '0.75rem' }}>
-                        {form.schema_fields ? (typeof form.schema_fields === 'string' ? JSON.parse(form.schema_fields).length : form.schema_fields.length) : 0} targets
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                        <button 
-                          className="button-secondary" 
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                          onClick={() => {
-                            selectForm(form);
-                            onNavigate('workspace');
-                          }}
-                        >
-                          <Settings size={14} /> Edit
-                        </button>
-                        <a 
-                          href={getShareLink(form.id)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="button-secondary" 
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
-                        >
-                          <ExternalLink size={14} /> Live Link
-                        </a>
-                        <button 
-                          className="button-secondary" 
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                          onClick={() => {
-                            selectForm(form);
-                            onNavigate('analytics');
-                          }}
-                        >
-                          <BarChart3 size={14} /> Analytics
-                        </button>
-                        <button 
-                          className="button-secondary" 
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
-                          onClick={() => setShareForm(form)}
-                        >
-                          <Share2 size={14} /> Share
-                        </button>
-                        <button 
-                          className="button-icon" 
-                          style={{ color: 'var(--error)' }}
-                          onClick={(e) => handleDeleteForm(form.id, e)}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+            <div className="table-responsive">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Form Title</th>
+                    <th>Core Objective</th>
+                    <th>Fields</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {forms.map(form => (
+                    <tr 
+                      key={form.id} 
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        selectForm(form);
+                        onNavigate('workspace');
+                      }}
+                    >
+                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{form.title}</td>
+                      <td style={{ color: 'var(--text-muted)', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {form.objective}
+                      </td>
+                      <td>
+                        <span className="share-url" style={{ padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid var(--card-border)', fontSize: '0.75rem' }}>
+                          {form.schema_fields ? (typeof form.schema_fields === 'string' ? JSON.parse(form.schema_fields).length : form.schema_fields.length) : 0} targets
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                          <button 
+                            className="button-secondary" 
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                            onClick={() => {
+                              selectForm(form);
+                              onNavigate('workspace');
+                            }}
+                          >
+                            <Settings size={14} /> Edit
+                          </button>
+                          <a 
+                            href={getShareLink(form.id)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="button-secondary" 
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                          >
+                            <ExternalLink size={14} /> Live Link
+                          </a>
+                          <button 
+                            className="button-secondary" 
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                            onClick={() => {
+                              selectForm(form);
+                              onNavigate('analytics');
+                            }}
+                          >
+                            <BarChart3 size={14} /> Analytics
+                          </button>
+                          <button 
+                            className="button-secondary" 
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                            onClick={() => setShareForm(form)}
+                          >
+                            <Share2 size={14} /> Share
+                          </button>
+                          <button 
+                            className="button-icon" 
+                            style={{ color: 'var(--error)' }}
+                            onClick={(e) => handleDeleteForm(form.id, e)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 

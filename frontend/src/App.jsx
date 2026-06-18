@@ -31,7 +31,7 @@ export default function App() {
       const initialPixels = Array.from({ length: 25 }, (_, i) => ({
         id: i,
         left: Math.random() * 100,
-        size: [4, 6, 8][Math.floor(Math.random() * 3)],
+        size: [8, 12, 16][Math.floor(Math.random() * 3)],
         delay: Math.random() * 6,
         duration: 3 + Math.random() * 5,
         opacity: 0.15 + Math.random() * 0.35

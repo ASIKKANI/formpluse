@@ -248,7 +248,7 @@ export default function AIWorkspace({ activeForm, selectForm, onNavigate, forms,
             {fields.map((field, idx) => (
               <div className="editor-card active" key={field.id}>
                 {/* Visual order actions */}
-                <div style={{ position: 'absolute', right: '1.25rem', top: '1.25rem', display: 'flex', gap: '0.25rem' }}>
+                <div className="editor-card-actions">
                   <button className="button-icon" style={{ width: '28px', height: '28px' }} onClick={() => moveField(idx, 'up')} disabled={idx === 0}>
                     <ArrowUp size={14} />
                   </button>
@@ -260,7 +260,7 @@ export default function AIWorkspace({ activeForm, selectForm, onNavigate, forms,
                   </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', paddingRight: '5rem', marginBottom: '0.75rem' }}>
+                <div className="editor-field-grid">
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Variable Label (Question Prompt)</label>
                     <input 
@@ -285,7 +285,7 @@ export default function AIWorkspace({ activeForm, selectForm, onNavigate, forms,
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', paddingRight: '5rem', alignItems: 'center' }}>
+                <div className="editor-field-grid align-center">
                   <div>
                     <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' }}>Target Extraction Description</label>
                     <input 

@@ -881,7 +881,7 @@ export default function Analytics({ activeForm, selectForm, onNavigate, forms, a
 
       {/* Historical trends & pacing friction row */}
       <div className="content-layout">
-        <div className="two-column-layout" style={{ gridTemplateColumns: '1fr 1fr' }}>
+        <div className="equal-two-columns">
           
           {/* Time Series chart */}
           <div className="card-container" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -942,7 +942,7 @@ export default function Analytics({ activeForm, selectForm, onNavigate, forms, a
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
             Identifies atypical feedback nodes calculated mathematically based on low vector similarity to cluster centroids.
           </p>
-          <div className="two-column-layout" style={{ gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div className="equal-two-columns" style={{ gap: '1rem' }}>
             {outliers.length === 0 ? (
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No atypical qualitative friction reported. Forms running smoothly.</p>
             ) : (
