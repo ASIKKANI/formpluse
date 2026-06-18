@@ -439,7 +439,18 @@ async def respond_to_survey(
 
     if audio:
         # Save temporary audio file
-        ext = audio.filename.split(".")[-1]
+        filename_parts = audio.filename.split(".")
+        if len(filename_parts) < 2:
+            raise HTTPException(status_code=400, detail="Invalid audio file name (missing extension)")
+        
+        ext = filename_parts[-1].lower()
+        allowed_extensions = {"mp3", "mp4", "mpeg", "mpga", "m4a", "wav", "webm", "ogg", "oga", "flac"}
+        if ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported audio format. Supported formats: {', '.join(sorted(allowed_extensions))}"
+            )
+
         temp_filename = f"uploads/{session_id}_{uuid.uuid4().hex}.{ext}"
         with open(temp_filename, "wb") as buffer:
             shutil.copyfileobj(audio.file, buffer)
@@ -580,10 +591,10 @@ def analyze_sentiment(text: str) -> str:
         return "Neutral"
 
 @app.get("/api/forms/{form_id}/analytics")
-def get_form_analytics(form_id: str, db: DBSession = Depends(get_db)):
-    form = db.query(Form).filter(Form.id == form_id).first()
+def get_form_analytics(form_id: str, user_id: str = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    form = db.query(Form).filter(Form.id == form_id, Form.user_id == user_id).first()
     if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
+        raise HTTPException(status_code=404, detail="Form not found or access denied")
 
     responses = db.query(Response).filter(Response.form_id == form_id).all()
     sessions = db.query(SurveySession).filter(SurveySession.form_id == form_id).all()
@@ -693,14 +704,14 @@ def get_form_analytics(form_id: str, db: DBSession = Depends(get_db)):
 # 5. SYNTHETIC COHORT ROLEPLAY
 # -----------------
 @app.post("/api/forms/{form_id}/cohort-chat")
-def chat_with_cohort(form_id: str, data: dict, db: DBSession = Depends(get_db)):
+def chat_with_cohort(form_id: str, data: dict, user_id: str = Depends(get_current_user), db: DBSession = Depends(get_db)):
     """
     Chats with a synthetic cohort persona.
     Instructs the LLM to roleplay as a user representing the aggregated responses.
     """
-    form = db.query(Form).filter(Form.id == form_id).first()
+    form = db.query(Form).filter(Form.id == form_id, Form.user_id == user_id).first()
     if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
+        raise HTTPException(status_code=404, detail="Form not found or access denied")
 
     cohort_name = data.get("cohort_name", "General Cohort")
     user_question = data.get("user_question", "")
