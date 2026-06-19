@@ -144,6 +144,41 @@ def _generate_mock_schema_from_prompt(prompt: str) -> dict:
         }
     }
 
+def coerce_field_types(schema: dict) -> dict:
+    """
+    Scans the schema fields and normalizes/coerces the 'type' field based on
+    heuristics matching label or description keywords if they default to 'text'.
+    This protects against LLMs generating generic 'text' fields for attachments/links.
+    """
+    if not isinstance(schema, dict) or "schema_fields" not in schema:
+        return schema
+        
+    fields = schema["schema_fields"]
+    if not isinstance(fields, list):
+        return schema
+        
+    for f in fields:
+        if not isinstance(f, dict):
+            continue
+            
+        current_type = f.get("type", "text")
+        if current_type == "text":
+            label = f.get("label", "").lower()
+            desc = f.get("description", "").lower()
+            text_pool = f"{label} {desc}"
+            
+            # 1. Check for picture type triggers
+            if any(w in text_pool for w in ["photo", "picture", "image", "screenshot", "avatar"]):
+                f["type"] = "picture"
+            # 2. Check for file type triggers
+            elif any(w in text_pool for w in ["file", "document", "pdf", "attachment", "resume", "cv"]):
+                f["type"] = "file"
+            # 3. Check for url type triggers
+            elif any(w in text_pool for w in ["url", "link", "website", "homepage"]):
+                f["type"] = "url"
+                
+    return schema
+
 def generate_form_schema(prompt: str) -> dict:
     """
     Takes a natural language prompt and compiles it into a structured
@@ -193,7 +228,7 @@ def generate_form_schema(prompt: str) -> dict:
             temperature=0.2
         )
         result = json.loads(completion.choices[0].message.content)
-        return result
+        return coerce_field_types(result)
     except Exception as e:
         print(f"Error calling Groq for schema: {e}")
         # Return fallback on error directly instead of recursive calls (fixes infinite recursion bug!)
@@ -254,7 +289,7 @@ def generate_form_schema_from_webpage(url: str, text_content: str, prompt: str =
             temperature=0.2
         )
         result = json.loads(completion.choices[0].message.content)
-        return result
+        return coerce_field_types(result)
     except Exception as e:
         print(f"Error calling Groq for webpage schema: {e}")
         return _generate_mock_schema_from_webpage(url, prompt)
@@ -697,7 +732,7 @@ def refine_form_schema(current_schema: dict, prompt: str) -> dict:
             temperature=0.2
         )
         result = json.loads(completion.choices[0].message.content)
-        return result
+        return coerce_field_types(result)
     except Exception as e:
         print(f"Error refining schema: {e}")
         return current_schema
