@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="logo.png" alt="FormPulse Logo" width="180" />
-</p>
+
 
 <h1 align="center">FormPulse</h1>
 
