@@ -1,17 +1,22 @@
 import os
-import chromadb
-from sentence_transformers import SentenceTransformer
 
-# Initialize ChromaDB
-CHROMA_PERSIST_DIR = os.path.join(os.path.dirname(__file__), "chroma_db")
-chroma_client = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+# Initialize ChromaDB and Embeddings with robust fallbacks to avoid crashing startup
+chroma_client = None
+embedding_model = None
 
-# Initialize embedding model locally
 try:
+    import chromadb
+    CHROMA_PERSIST_DIR = os.path.join(os.path.dirname(__file__), "chroma_db")
+    chroma_client = chromadb.PersistentClient(path=CHROMA_PERSIST_DIR)
+except Exception as e:
+    print(f"[WARN] ChromaDB could not be initialized (RAG disabled): {e}")
+
+try:
+    from sentence_transformers import SentenceTransformer
     embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 except Exception as e:
-    print(f"Warning: Could not load SentenceTransformer model. RAG may fail. Error: {e}")
-    embedding_model = None
+    print(f"[WARN] SentenceTransformer could not be initialized (RAG disabled): {e}")
+
 
 def simple_text_splitter(text: str, chunk_size: int = 1000, overlap: int = 200):
     chunks = []
@@ -26,7 +31,7 @@ def index_document(form_id: str, markdown_text: str):
     """
     Chunks the document and stores it in ChromaDB under the form_id collection.
     """
-    if not markdown_text or not embedding_model:
+    if not markdown_text or not embedding_model or not chroma_client:
         return
         
     collection = chroma_client.get_or_create_collection(name=f"form_{form_id}")
@@ -50,7 +55,7 @@ def query_document(form_id: str, query: str, top_k: int = 3) -> str:
     Queries the vector database for the given form_id.
     Returns the concatenated text of the top K most relevant chunks.
     """
-    if not embedding_model:
+    if not embedding_model or not chroma_client:
         return ""
         
     try:
