@@ -655,10 +655,38 @@ export default function Analytics({ activeForm, selectForm, onNavigate, forms, a
     }
   };
 
-  // Color mapper for clusters
   const getClusterColor = (cId) => {
     const colors = ["#2563eb", "#a855f7", "#10b981", "#ef4444", "#f59e0b"];
     return colors[cId % colors.length];
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const response = await fetch(`/api/forms/${activeForm.id}/export`, {
+        headers: authHeaders
+      });
+      if (!response.ok) throw new Error("Export failed");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      
+      const disposition = response.headers.get('content-disposition');
+      let filename = `${activeForm.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_responses.csv`;
+      if (disposition && disposition.includes('filename=')) {
+        filename = disposition.split('filename=')[1].replace(/["']/g, '');
+      }
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Failed to export CSV:", err);
+      alert("Failed to export responses. Please try again.");
+    }
   };
 
   if (loading) {
@@ -708,6 +736,9 @@ export default function Analytics({ activeForm, selectForm, onNavigate, forms, a
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="button-primary no-print" onClick={handleExportCsv} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <Download size={14} /> Download CSV
+          </button>
           <button className="button-secondary no-print" onClick={() => window.print()} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <Download size={14} /> Export PDF
           </button>

@@ -2,8 +2,11 @@ import os
 import json
 import uuid
 import shutil
+import csv
+import io
 from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form as FormParam
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
@@ -1026,6 +1029,65 @@ def get_form_analytics(form_id: str, user_id: str = Depends(get_current_user), d
         "historical_trends": trend_series,
         "responses_list": all_responses_data
     }
+
+@app.get("/api/forms/{form_id}/export")
+def export_form_responses(form_id: str, user_id: str = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    """
+    Exports all form responses as a downloadable CSV.
+    """
+    form = db.query(Form).filter(Form.id == form_id, Form.user_id == user_id).first()
+    if not form:
+        raise HTTPException(status_code=404, detail="Form not found or access denied")
+
+    responses = db.query(Response).filter(Response.form_id == form_id).order_by(Response.submitted_at.desc()).all()
+    
+    all_rows = []
+    all_keys = set(["Response ID", "Submitted At", "Fatigue Index", "Sentiment", "Full Chat Transcript"])
+    
+    for r in responses:
+        extracted = json.loads(r.extracted_data)
+        for key in extracted.keys():
+            all_keys.add(key)
+            
+        # Determine sentiment & build transcript
+        raw_history = json.loads(r.raw_chat)
+        user_msgs = [m["content"] for m in raw_history if m["role"] == "user"]
+        full_user_text = " | ".join(user_msgs) if user_msgs else ""
+        sentiment = analyze_sentiment(full_user_text)
+        
+        # Build readable transcript
+        transcript = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in raw_history])
+
+        row = {
+            "Response ID": r.id,
+            "Submitted At": r.submitted_at.isoformat() if r.submitted_at else "",
+            "Fatigue Index": r.fatigue_index,
+            "Sentiment": sentiment,
+            "Full Chat Transcript": transcript
+        }
+        row.update(extracted)
+        all_rows.append(row)
+
+    metadata_cols = ["Response ID", "Submitted At", "Sentiment", "Fatigue Index", "Full Chat Transcript"]
+    data_cols = sorted(list(all_keys - set(metadata_cols)))
+    fieldnames = metadata_cols + data_cols
+
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(all_rows)
+    
+    output.seek(0)
+    
+    # Make filename safe
+    safe_title = "".join([c if c.isalnum() else "_" for c in form.title])
+    filename = f"{safe_title}_responses.csv"
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
 
 # -----------------
 # 5. SYNTHETIC COHORT ROLEPLAY
